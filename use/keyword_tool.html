@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiMwM0M3NUEiLz48dGV4dCB4PSIzMiIgeT0iNDQiIGZvbnQtc2l6ZT0iMzYiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC13ZWlnaHQ9ImJvbGQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIj5OPC90ZXh0Pjwvc3ZnPg==">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>네이버 키워드 파일 생성기</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+  :root {
+    --bg: #0e0e10;
+    --surface: #18181c;
+    --surface2: #1e1e24;
+    --border: #2a2a32;
+    --accent: #00e5a0;
+    --accent-dim: rgba(0,229,160,0.10);
+    --accent2: #5b6bff;
+    --accent2-dim: rgba(91,107,255,0.12);
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --danger: #ff5060;
+    --danger-dim: rgba(255,80,96,0.10);
+    --warn: #f5a623;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 36px 24px 100px;
+  }
+
+  /* ── 헤더 ── */
+  header {
+    width: 100%;
+    max-width: 960px;
+    margin-bottom: 28px;
+  }
+  .tag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px; }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .subtitle { margin-top: 5px; color: var(--muted); font-size: 13px; font-weight: 300; }
+
+  /* ── 탭 ── */
+  .tab-bar {
+    width: 100%;
+    max-width: 960px;
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 11px 16px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active-onoff {
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .tab-btn.active-bid {
+    background: var(--accent2-dim);
+    color: var(--accent2);
+    font-weight: 700;
+  }
+  .tab-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .tab-btn.active-onoff .tab-dot { background: var(--accent); }
+  .tab-btn.active-bid .tab-dot { background: var(--accent2); }
+  .tab-btn:not(.active-onoff):not(.active-bid) .tab-dot { background: var(--border); }
+
+  /* ── 페이지 ── */
+  .page { display: none; width: 100%; max-width: 960px; }
+  .page.active { display: block; }
+
+  /* ── 공통 레이아웃 ── */
+  .main-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  .left-panel { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 24px; }
+  .input-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted);
+    letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .field-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .req { color: var(--accent); font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
+  .req-bid { color: var(--accent2); font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
+
+  textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    padding: 12px 14px; resize: vertical; transition: border-color 0.2s; line-height: 1.7;
+  }
+  textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+  .bid-page textarea:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px var(--accent2-dim); }
+  textarea::placeholder { color: #3a3a48; }
+  .ta-id { height: 180px; }
+  .ta-val { height: 120px; }
+  .field-wrap { margin-bottom: 14px; }
+  .field-wrap:last-child { margin-bottom: 0; }
+
+  .count-row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .count-item { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+  .count-item b { color: var(--accent); }
+  .bid-page .count-item b { color: var(--accent2); }
+  .count-item.mismatch b { color: var(--danger); }
+
+  .match-badge { font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 3px 8px; border-radius: 4px; background: rgba(245,166,35,0.12); color: var(--warn); }
+  .match-badge.ok { background: var(--accent-dim); color: var(--accent); }
+  .match-badge.ok-bid { background: var(--accent2-dim); color: var(--accent2); }
+  .match-badge.bad { background: var(--danger-dim); color: var(--danger); }
+
+  /* 일괄변경 버튼 (ON/OFF 전용) */
+  .quick-btns { display: flex; gap: 8px; }
+  .quick-btn { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: transparent; font-family: 'IBM Plex Mono', monospace; font-size: 12px; cursor: pointer; transition: all 0.15s; font-weight: 700; }
+  .quick-btn.on { color: var(--accent); border-color: var(--accent); }
+  .quick-btn.off { color: var(--danger); border-color: var(--danger); }
+  .quick-btn.on:hover { background: var(--accent-dim); }
+  .quick-btn.off:hover { background: var(--danger-dim); }
+
+  /* 리셋 / 생성 버튼 */
+  .btn-reset {
+    width: 100%; padding: 11px; background: transparent; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 8px;
+    font-family: 'Noto Sans KR', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .btn-reset:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); background: var(--danger-dim); }
+  .btn-reset:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .btn-generate {
+    width: 100%; padding: 14px; background: var(--accent); color: #000; border: none; border-radius: 8px;
+    font-family: 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-generate:hover:not(:disabled) { background: #00ffb3; box-shadow: 0 6px 24px rgba(0,229,160,0.3); transform: translateY(-1px); }
+  .btn-generate:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+  .btn-generate.bid-btn { background: var(--accent2); color: #fff; }
+  .btn-generate.bid-btn:hover:not(:disabled) { background: #7b8bff; box-shadow: 0 6px 24px rgba(91,107,255,0.3); }
+
+  .error-box { background: var(--danger-dim); border: 1px solid var(--danger); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--danger); display: none; line-height: 1.5; }
+
+  /* ── 오른쪽 패널 ── */
+  .right-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .table-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .table-title { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+  .table-stats { display: flex; gap: 16px; }
+  .stat { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+  .stat b { font-weight: 700; }
+  .stat.s-on b { color: var(--accent); }
+  .stat.s-off b { color: var(--danger); }
+  .stat.s-total b { color: var(--text); }
+  .stat.s-bid b { color: var(--accent2); }
+
+  .table-wrap { overflow-y: auto; max-height: 560px; }
+  table { width: 100%; border-collapse: collapse; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  thead { position: sticky; top: 0; z-index: 2; }
+  th { background: var(--surface2); color: var(--muted); padding: 10px 16px; text-align: left; font-weight: 600; font-size: 11px; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
+  td { padding: 7px 16px; border-bottom: 1px solid rgba(42,42,50,0.7); color: var(--text); vertical-align: middle; }
+  tr:hover td { background: rgba(255,255,255,0.025); }
+  .row-num { color: var(--muted); font-size: 11px; width: 44px; user-select: none; }
+
+  /* ON/OFF 토글 */
+  .toggle-btn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; border: none; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; transition: all 0.12s; letter-spacing: 0.04em; }
+  .toggle-btn.on { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(0,229,160,0.25); }
+  .toggle-btn.off { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(255,80,96,0.25); }
+  .toggle-btn.on:hover { background: rgba(0,229,160,0.2); }
+  .toggle-btn.off:hover { background: rgba(255,80,96,0.2); }
+  .toggle-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .toggle-btn.on .toggle-dot { background: var(--accent); }
+  .toggle-btn.off .toggle-dot { background: var(--danger); }
+
+  /* 입찰가 뱃지 */
+  .bid-value { display: inline-block; padding: 3px 10px; border-radius: 6px; background: var(--accent2-dim); color: var(--accent2); font-weight: 600; font-size: 12px; }
+  .bid-value.invalid { background: var(--danger-dim); color: var(--danger); }
+
+  .row-warn td { background: rgba(245,166,35,0.04); }
+  .warn-text { color: var(--warn); font-size: 10px; }
+
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 40px; color: var(--muted); gap: 12px; }
+  .empty-icon { font-size: 28px; opacity: 0.25; }
+  .empty-text { font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-align: center; line-height: 1.7; }
+
+  .more-notice { padding: 10px 16px; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); background: var(--surface2); }
+
+  /* ── 다운로드 바 ── */
+  .download-bar { display: none; flex-direction: column; border-top: 2px solid var(--accent); background: rgba(0,229,160,0.04); }
+  .download-bar.bid { border-top-color: var(--accent2); background: rgba(91,107,255,0.04); }
+  .download-bar.visible { display: flex; }
+  .dl-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px; gap: 12px; }
+  .dl-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 0.08em; min-width: 80px; }
+  .dl-label.navers { color: var(--accent2); }
+  .dl-divider { height: 1px; background: var(--border); margin: 0 20px; }
+  .filename-text { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .filename-text span { color: var(--text); }
+  .fn-input {
+    flex: 1; min-width: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 7px 10px;
+    transition: border-color 0.2s;
+  }
+  .fn-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+  .bid-page .fn-input:focus { border-color: var(--accent2); box-shadow: 0 0 0 2px var(--accent2-dim); }
+  .btn-dl { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--accent); color: #000; border: none; border-radius: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn-dl:hover { background: #00ffb3; transform: translateY(-1px); }
+  .btn-dl.navers { background: var(--accent2); color: #fff; }
+  .btn-dl.navers:hover { background: #7b8bff; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">● Naver AD Tool</div>
+  <h1>네이버 키워드 파일 생성기</h1>
+  <p class="subtitle">붙여넣는 즉시 테이블에서 확인 · 매체 &amp; 네이버스 CSV 동시 생성</p>
+</header>
+
+<!-- 탭 -->
+<div class="tab-bar">
+  <button class="tab-btn active-onoff" id="tab-onoff" onclick="switchTab('onoff')">
+    <span class="tab-dot"></span>키워드 ON/OFF
+  </button>
+  <button class="tab-btn" id="tab-bid" onclick="switchTab('bid')">
+    <span class="tab-dot"></span>키워드 입찰가 변경
+  </button>
+</div>
+
+<!-- ════════════════ ON/OFF 페이지 ════════════════ -->
+<div class="page active" id="page-onoff">
+  <div class="main-layout">
+    <div class="left-panel">
+      <div class="input-card">
+        <div class="section-label">데이터 입력</div>
+        <div class="field-wrap">
+          <div class="field-label">키워드ID <span class="req">필수</span></div>
+          <textarea class="ta-id" id="oo-ids" placeholder="nkw-12345678&#10;nkw-87654321&#10;..."></textarea>
+        </div>
+        <div class="field-wrap">
+          <div class="field-label">ON/OFF 상태값 <span class="req">필수</span></div>
+          <textarea class="ta-val" id="oo-vals" placeholder="on&#10;off&#10;on&#10;...&#10;&#10;※ 1개만 입력하면 전체 적용"></textarea>
+        </div>
+        <div class="count-row">
+          <div class="count-item" id="oo-id-cnt">키워드ID <b>0</b>개</div>
+          <div class="match-badge" id="oo-badge">대기중</div>
+          <div class="count-item" id="oo-val-cnt">상태값 <b>0</b>개</div>
+        </div>
+      </div>
+      <div class="input-card">
+        <div class="section-label">일괄 변경</div>
+        <div class="quick-btns">
+          <button class="quick-btn on" onclick="ooSetAll('on')">전체 ON</button>
+          <button class="quick-btn off" onclick="ooSetAll('off')">전체 OFF</button>
+        </div>
+      </div>
+      <div class="error-box" id="oo-error"></div>
+      <button class="btn-reset" id="oo-reset-btn" onclick="ooReset()" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+        초기화
+      </button>
+      <button class="btn-generate" id="oo-gen-btn" onclick="ooGenerate()" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        CSV 파일 생성
+      </button>
+    </div>
+
+    <div class="right-panel">
+      <div class="table-header">
+        <div class="table-title">실시간 미리보기</div>
+        <div class="table-stats">
+          <div class="stat s-total">총 <b id="oo-total">0</b>개</div>
+          <div class="stat s-on">ON <b id="oo-on">0</b></div>
+          <div class="stat s-off">OFF <b id="oo-off">0</b></div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="empty-state" id="oo-empty">
+          <div class="empty-icon">⌨</div>
+          <div class="empty-text">키워드ID와 ON/OFF 값을<br>왼쪽에 붙여넣으세요</div>
+        </div>
+        <table id="oo-table" style="display:none">
+          <thead><tr>
+            <th class="row-num">#</th>
+            <th>키워드ID</th>
+            <th>상태값 <span style="font-weight:400;color:#444;font-size:10px;">(클릭해서 변경)</span></th>
+            <th></th>
+          </tr></thead>
+          <tbody id="oo-tbody"></tbody>
+        </table>
+      </div>
+      <div class="more-notice" id="oo-more" style="display:none"></div>
+      <div class="download-bar" id="oo-dl-bar">
+        <div class="dl-item">
+          <div class="dl-label">매체 CSV</div>
+          <input class="fn-input" id="oo-fn-media" value="-">
+          <button class="btn-dl" onclick="ooDownload('media')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            매체 다운로드
+          </button>
+        </div>
+        <div class="dl-divider"></div>
+        <div class="dl-item">
+          <div class="dl-label navers">네이버스 CSV</div>
+          <input class="fn-input" id="oo-fn-navers" value="-">
+          <button class="btn-dl navers" onclick="ooDownload('navers')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            네이버스 다운로드
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ 입찰가 페이지 ════════════════ -->
+<div class="page bid-page" id="page-bid">
+  <div class="main-layout">
+    <div class="left-panel">
+      <div class="input-card">
+        <div class="section-label">데이터 입력</div>
+        <div class="field-wrap">
+          <div class="field-label">키워드ID <span class="req-bid">필수</span></div>
+          <textarea class="ta-id" id="bid-ids" placeholder="nkw-12345678&#10;nkw-87654321&#10;..."></textarea>
+        </div>
+        <div class="field-wrap">
+          <div class="field-label">입찰가 (숫자만) <span class="req-bid">필수</span></div>
+          <textarea class="ta-val" id="bid-vals" placeholder="100&#10;200&#10;150&#10;...&#10;&#10;※ 1개만 입력하면 전체 적용"></textarea>
+        </div>
+        <div class="count-row">
+          <div class="count-item" id="bid-id-cnt">키워드ID <b>0</b>개</div>
+          <div class="match-badge" id="bid-badge">대기중</div>
+          <div class="count-item" id="bid-val-cnt">입찰가 <b>0</b>개</div>
+        </div>
+      </div>
+      <div class="error-box" id="bid-error"></div>
+      <button class="btn-reset" id="bid-reset-btn" onclick="bidReset()" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+        초기화
+      </button>
+      <button class="btn-generate bid-btn" id="bid-gen-btn" onclick="bidGenerate()" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        CSV 파일 생성
+      </button>
+    </div>
+
+    <div class="right-panel">
+      <div class="table-header">
+        <div class="table-title">실시간 미리보기</div>
+        <div class="table-stats">
+          <div class="stat s-total">총 <b id="bid-total">0</b>개</div>
+          <div class="stat s-bid">입찰가 입력 <b id="bid-valid">0</b>개</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="empty-state" id="bid-empty">
+          <div class="empty-icon">⌨</div>
+          <div class="empty-text">키워드ID와 입찰가를<br>왼쪽에 붙여넣으세요</div>
+        </div>
+        <table id="bid-table" style="display:none">
+          <thead><tr>
+            <th class="row-num">#</th>
+            <th>키워드ID</th>
+            <th>입찰가</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="bid-tbody"></tbody>
+        </table>
+      </div>
+      <div class="more-notice" id="bid-more" style="display:none"></div>
+      <div class="download-bar bid" id="bid-dl-bar">
+        <div class="dl-item">
+          <div class="dl-label">매체 CSV</div>
+          <input class="fn-input" id="bid-fn-media" value="-">
+          <button class="btn-dl" onclick="bidDownload('media')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            매체 다운로드
+          </button>
+        </div>
+        <div class="dl-divider"></div>
+        <div class="dl-item">
+          <div class="dl-label navers">네이버스 CSV</div>
+          <input class="fn-input" id="bid-fn-navers" value="-">
+          <button class="btn-dl navers" onclick="bidDownload('navers')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            네이버스 다운로드
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const LIMIT = 500;
+
+/* ─── 공통 유틸 ─── */
+function parseLines(t) { return t.split(/\r?\n/).map(l=>l.trim()).filter(l=>l!==''); }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function getDateSuffix() {
+  const n=new Date();
+  return String(n.getFullYear()).slice(2)+String(n.getMonth()+1).padStart(2,'0')+String(n.getDate()).padStart(2,'0');
+}
+function dlCSV(csv, filename) {
+  const bom = '\uFEFF'+csv;
+  const bytes = new TextEncoder().encode(bom);
+  let bin=''; bytes.forEach(b=>bin+=String.fromCharCode(b));
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8;base64,'+btoa(bin);
+  a.download=filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+/* ─── 탭 전환 ─── */
+function switchTab(t) {
+  document.getElementById('page-onoff').classList.toggle('active', t==='onoff');
+  document.getElementById('page-bid').classList.toggle('active', t==='bid');
+  const ooBtn = document.getElementById('tab-onoff');
+  const bidBtn = document.getElementById('tab-bid');
+  ooBtn.className  = 'tab-btn' + (t==='onoff' ? ' active-onoff' : '');
+  bidBtn.className = 'tab-btn' + (t==='bid'   ? ' active-bid'   : '');
+}
+
+/* ══════════════════════════════════
+   ON/OFF 페이지
+══════════════════════════════════ */
+let ooRows = [];
+let ooCsvMedia='', ooCsvNavers='', ooFnMedia='', ooFnNavers='';
+
+const ooIdTA  = document.getElementById('oo-ids');
+const ooValTA = document.getElementById('oo-vals');
+
+function ooSetAll(v) { ooValTA.value=v; ooOnInput(); }
+function ooShowErr(m) { const b=document.getElementById('oo-error'); b.style.display='block'; b.textContent='⚠ '+m; }
+function ooClearErr() { document.getElementById('oo-error').style.display='none'; }
+
+function ooUpdateBadge(ids,sts) {
+  document.getElementById('oo-id-cnt').innerHTML=`키워드ID <b>${ids.length}</b>개`;
+  document.getElementById('oo-val-cnt').innerHTML=`상태값 <b>${sts.length}</b>개`;
+  const b=document.getElementById('oo-badge');
+  if (!ids.length)           { b.className='match-badge';     b.textContent='대기중'; }
+  else if (sts.length===1)   { b.className='match-badge';     b.textContent='전체적용'; }
+  else if (ids.length===sts.length) { b.className='match-badge ok'; b.textContent='✓ 일치'; }
+  else                       { b.className='match-badge bad'; b.textContent=`${Math.abs(ids.length-sts.length)}개 차이`; }
+}
+
+function ooRenderTable() {
+  const tbody=document.getElementById('oo-tbody'), table=document.getElementById('oo-table');
+  const empty=document.getElementById('oo-empty'), more=document.getElementById('oo-more');
+  if (!ooRows.length) {
+    table.style.display='none'; empty.style.display='flex'; more.style.display='none';
+    ['oo-total','oo-on','oo-off'].forEach(id=>document.getElementById(id).textContent=0);
+    return;
+  }
+  empty.style.display='none'; table.style.display='table';
+  tbody.innerHTML='';
+  ooRows.slice(0,LIMIT).forEach((row,i)=>{
+    const tr=document.createElement('tr');
+    const warn=row.status!=='on'&&row.status!=='off';
+    if(warn) tr.className='row-warn';
+    const cell = warn
+      ? `<span class="warn-text">⚠ "${escHtml(row.status||'(없음)')}"</span>`
+      : `<button class="toggle-btn ${row.status}" onclick="ooToggle(${i})" title="클릭으로 ON↔OFF">
+           <span class="toggle-dot"></span>${row.status.toUpperCase()}
+         </button>`;
+    tr.innerHTML=`<td class="row-num">${i+1}</td><td>${escHtml(row.id)}</td><td>${cell}</td><td>${warn?'<span class="warn-text">유효하지 않은 값</span>':''}</td>`;
+    tbody.appendChild(tr);
+  });
+  if(ooRows.length>LIMIT){ more.style.display='block'; more.textContent=`테이블은 ${LIMIT}개까지 표시 | CSV는 ${ooRows.length}개 전체 포함`; }
+  else more.style.display='none';
+  const on=ooRows.filter(r=>r.status==='on').length, off=ooRows.filter(r=>r.status==='off').length;
+  document.getElementById('oo-total').textContent=ooRows.length;
+  document.getElementById('oo-on').textContent=on;
+  document.getElementById('oo-off').textContent=off;
+}
+
+function ooToggle(i) {
+  ooRows[i].status=ooRows[i].status==='on'?'off':'on';
+  ooRenderTable();
+  ooValTA.value=ooRows.map(r=>r.status).join('\n');
+  ooUpdateBadge(ooRows.map(r=>r.id),ooRows.map(r=>r.status));
+  ooCheckBtn();
+  document.getElementById('oo-dl-bar').classList.remove('visible');
+}
+
+function ooCheckBtn() {
+  const bad=ooRows.some(r=>r.status!=='on'&&r.status!=='off');
+  document.getElementById('oo-gen-btn').disabled=bad||!ooRows.length;
+}
+
+function ooOnInput() {
+  ooClearErr();
+  document.getElementById('oo-reset-btn').disabled = !ooIdTA.value.trim() && !ooValTA.value.trim();
+  const ids=parseLines(ooIdTA.value), sts=parseLines(ooValTA.value);
+  ooUpdateBadge(ids,sts);
+  if(!ids.length){ ooRows=[]; ooRenderTable(); document.getElementById('oo-gen-btn').disabled=true; return; }
+  let sa;
+  if(sts.length===1) sa=Array(ids.length).fill(sts[0].toLowerCase());
+  else if(sts.length===ids.length) sa=sts.map(s=>s.toLowerCase());
+  else sa=ids.map((_,i)=>i<sts.length?sts[i].toLowerCase():'');
+  ooRows=ids.map((id,i)=>({id,status:sa[i]}));
+  ooRenderTable(); ooCheckBtn();
+  document.getElementById('oo-dl-bar').classList.remove('visible');
+}
+
+function ooReset() {
+  ooIdTA.value=''; ooValTA.value=''; ooRows=[];
+  ooCsvMedia=''; ooCsvNavers='';
+  ooRenderTable(); ooUpdateBadge([],[]);
+  document.getElementById('oo-gen-btn').disabled=true;
+  document.getElementById('oo-reset-btn').disabled=true;
+  document.getElementById('oo-dl-bar').classList.remove('visible');
+  ooClearErr();
+}
+
+function ooGenerate() {
+  ooClearErr();
+  if(!ooRows.length)       { ooShowErr('키워드ID를 입력해주세요.'); return; }
+  if(ooRows.length>10000)  { ooShowErr('최대 10,000개까지 입력 가능합니다.'); return; }
+  const bad=ooRows.find(r=>r.status!=='on'&&r.status!=='off');
+  if(bad) { ooShowErr('유효하지 않은 상태값이 있습니다. ⚠ 표시 행을 확인하세요.'); return; }
+  const ds=getDateSuffix();
+  // 매체
+  const mh=["광고그룹ID 키워드ID 는 '광고다운로드' 파일에서 확인 할 수 있습니다.,,,","키워드ID 기준으로 키워드 수정요청이 적용됩니다.,,,","변경할 상태값은 on/off 로 입력하면 됩니다. (대소문자 구분 없음),,,","입력은 최대 만(10000)개까지 가능합니다.,,,","[중요] 7행부터 입력값이 시스템에 반영됩니다. 1~6행을 삭제하지 마세요. 엑셀에서 저장시 CSV 파일형식을 꼭 확인하시기 바랍니다.,,,","광고그룹ID (선택),키워드ID (필수),키워드 (선택),키워드상태값 (on 또는 off)"];
+  ooCsvMedia=[...mh,...ooRows.map(r=>`,${r.id},,${r.status}`)].join('\r\n');
+  ooFnMedia=`ko_edit_keyword_onoff_${ds}.csv`;
+  // 네이버스
+  ooCsvNavers=[`"키워드ID","키워드명(선택)","ON/OFF"`,...ooRows.map(r=>`"${r.id}","","${r.status.toUpperCase()}"`)].join('\r\n');
+  ooFnNavers=`키워드_대량_ON_OFF_템플릿_${ds}.csv`;
+  document.getElementById('oo-fn-media').value=ooFnMedia;
+  document.getElementById('oo-fn-navers').value=ooFnNavers;
+  const bar=document.getElementById('oo-dl-bar');
+  bar.classList.add('visible');
+  bar.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function ooDownload(t) {
+  const fn = document.getElementById(t==='navers'?'oo-fn-navers':'oo-fn-media').value.trim() || (t==='navers'?ooFnNavers:ooFnMedia);
+  dlCSV(t==='navers'?ooCsvNavers:ooCsvMedia, fn);
+}
+ooIdTA.addEventListener('input', ooOnInput);
+ooValTA.addEventListener('input', ooOnInput);
+ooIdTA.addEventListener('paste', ()=>setTimeout(ooOnInput,30));
+ooValTA.addEventListener('paste', ()=>setTimeout(ooOnInput,30));
+
+
+/* ══════════════════════════════════
+   입찰가 페이지
+══════════════════════════════════ */
+let bidRows = [];
+let bidCsvMedia='', bidCsvNavers='', bidFnMedia='', bidFnNavers='';
+
+const bidIdTA  = document.getElementById('bid-ids');
+const bidValTA = document.getElementById('bid-vals');
+
+function bidShowErr(m) { const b=document.getElementById('bid-error'); b.style.display='block'; b.textContent='⚠ '+m; }
+function bidClearErr() { document.getElementById('bid-error').style.display='none'; }
+
+function bidUpdateBadge(ids,vals) {
+  document.getElementById('bid-id-cnt').innerHTML=`키워드ID <b>${ids.length}</b>개`;
+  document.getElementById('bid-val-cnt').innerHTML=`입찰가 <b>${vals.length}</b>개`;
+  const b=document.getElementById('bid-badge');
+  if(!ids.length)                { b.className='match-badge';      b.textContent='대기중'; }
+  else if(vals.length===1)       { b.className='match-badge';      b.textContent='전체적용'; }
+  else if(ids.length===vals.length){ b.className='match-badge ok-bid'; b.textContent='✓ 일치'; }
+  else                           { b.className='match-badge bad';  b.textContent=`${Math.abs(ids.length-vals.length)}개 차이`; }
+}
+
+function isValidBid(v) { return /^\d+$/.test(v.trim()) && parseInt(v)>0; }
+
+function bidRenderTable() {
+  const tbody=document.getElementById('bid-tbody'), table=document.getElementById('bid-table');
+  const empty=document.getElementById('bid-empty'), more=document.getElementById('bid-more');
+  if(!bidRows.length) {
+    table.style.display='none'; empty.style.display='flex'; more.style.display='none';
+    document.getElementById('bid-total').textContent=0;
+    document.getElementById('bid-valid').textContent=0;
+    return;
+  }
+  empty.style.display='none'; table.style.display='table';
+  tbody.innerHTML='';
+  bidRows.slice(0,LIMIT).forEach((row,i)=>{
+    const tr=document.createElement('tr');
+    const warn=!isValidBid(row.bid||'');
+    if(warn) tr.className='row-warn';
+    const cell=warn
+      ? `<span class="warn-text">⚠ "${escHtml(row.bid||'(없음)')}"</span>`
+      : `<span class="bid-value">${Number(row.bid).toLocaleString()}원</span>`;
+    tr.innerHTML=`<td class="row-num">${i+1}</td><td>${escHtml(row.id)}</td><td>${cell}</td><td>${warn?'<span class="warn-text">숫자만 입력</span>':''}</td>`;
+    tbody.appendChild(tr);
+  });
+  if(bidRows.length>LIMIT){ more.style.display='block'; more.textContent=`테이블은 ${LIMIT}개까지 표시 | CSV는 ${bidRows.length}개 전체 포함`; }
+  else more.style.display='none';
+  const valid=bidRows.filter(r=>isValidBid(r.bid||'')).length;
+  document.getElementById('bid-total').textContent=bidRows.length;
+  document.getElementById('bid-valid').textContent=valid;
+}
+
+function bidCheckBtn() {
+  const bad=bidRows.some(r=>!isValidBid(r.bid||''));
+  document.getElementById('bid-gen-btn').disabled=bad||!bidRows.length;
+}
+
+function bidOnInput() {
+  bidClearErr();
+  document.getElementById('bid-reset-btn').disabled = !bidIdTA.value.trim() && !bidValTA.value.trim();
+  const ids=parseLines(bidIdTA.value), vals=parseLines(bidValTA.value);
+  bidUpdateBadge(ids,vals);
+  if(!ids.length){ bidRows=[]; bidRenderTable(); document.getElementById('bid-gen-btn').disabled=true; return; }
+  let va;
+  if(vals.length===1) va=Array(ids.length).fill(vals[0].trim());
+  else if(vals.length===ids.length) va=vals.map(v=>v.trim());
+  else va=ids.map((_,i)=>i<vals.length?vals[i].trim():'');
+  bidRows=ids.map((id,i)=>({id,bid:va[i]}));
+  bidRenderTable(); bidCheckBtn();
+  document.getElementById('bid-dl-bar').classList.remove('visible');
+}
+
+function bidReset() {
+  bidIdTA.value=''; bidValTA.value=''; bidRows=[];
+  bidCsvMedia=''; bidCsvNavers='';
+  bidRenderTable(); bidUpdateBadge([],[]);
+  document.getElementById('bid-gen-btn').disabled=true;
+  document.getElementById('bid-reset-btn').disabled=true;
+  document.getElementById('bid-dl-bar').classList.remove('visible');
+  bidClearErr();
+}
+
+function bidGenerate() {
+  bidClearErr();
+  if(!bidRows.length)       { bidShowErr('키워드ID를 입력해주세요.'); return; }
+  if(bidRows.length>10000)  { bidShowErr('최대 10,000개까지 입력 가능합니다.'); return; }
+  const bad=bidRows.find(r=>!isValidBid(r.bid||''));
+  if(bad) { bidShowErr('유효하지 않은 입찰가가 있습니다. ⚠ 표시 행을 확인하세요.'); return; }
+  const ds=getDateSuffix();
+  // 매체
+  const mh=["광고그룹ID 키워드ID 는 '광고다운로드' 파일에서 확인 할 수 있습니다.,,,","키워드ID 기준으로 키워드 수정요청이 적용됩니다. 입찰가는 쉼표나 '원' 표시를 제외한 숫자만 입력해 주세요.,,,","입찰가는 '키워드입찰가'로 저장되며 '기본입찰가'가 있더라도 수정된 '키워드입찰가'로 광고가 진행됩니다.,,,","입력은 최대 만(10000)개까지 가능합니다.,,,","[중요] 7행부터 입력값이 시스템에 반영됩니다. 1~6행을 삭제하지 마세요. 엑셀에서 저장시 CSV 파일형식을 꼭 확인하시기 바랍니다.,,,","광고그룹ID (선택),키워드ID (필수),키워드 (선택),\"키워드입찰가 (필수,숫자만)\""];
+  bidCsvMedia=[...mh,...bidRows.map(r=>`,${r.id},,${r.bid}`)].join('\r\n');
+  bidFnMedia=`ko_edit_keyword_bid_template_${ds}.csv`;
+  // 네이버스
+  bidCsvNavers=[`"키워드ID","키워드명(선택)","입찰가(선택)"`,...bidRows.map(r=>`"${r.id}","","${r.bid}"`)].join('\r\n');
+  bidFnNavers=`키워드_대량_입찰가_수정_템플릿_${ds}.csv`;
+  document.getElementById('bid-fn-media').value=bidFnMedia;
+  document.getElementById('bid-fn-navers').value=bidFnNavers;
+  const bar=document.getElementById('bid-dl-bar');
+  bar.classList.add('visible');
+  bar.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function bidDownload(t) {
+  const fn = document.getElementById(t==='navers'?'bid-fn-navers':'bid-fn-media').value.trim() || (t==='navers'?bidFnNavers:bidFnMedia);
+  dlCSV(t==='navers'?bidCsvNavers:bidCsvMedia, fn);
+}
+bidIdTA.addEventListener('input', bidOnInput);
+bidValTA.addEventListener('input', bidOnInput);
+bidIdTA.addEventListener('paste', ()=>setTimeout(bidOnInput,30));
+bidValTA.addEventListener('paste', ()=>setTimeout(bidOnInput,30));
+</script>
+</body>
+</html>

@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiMwM0M3NUEiLz48dGV4dCB4PSIzMiIgeT0iNDQiIGZvbnQtc2l6ZT0iMzYiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC13ZWlnaHQ9ImJvbGQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIj5OPC90ZXh0Pjwvc3ZnPg==">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CiAgPHBvbHlnb24gcG9pbnRzPSIzNiwyIDE2LDM2IDMwLDM2IDI4LDYyIDQ4LDI4IDM0LDI4IiBmaWxsPSIjMDNDNzVBIi8+Cjwvc3ZnPg==">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>네이버 키워드 파일 생성기</title>
 <style>
@@ -559,10 +559,13 @@ function ooGenerate() {
   // 매체
   const mh=["광고그룹ID 키워드ID 는 '광고다운로드' 파일에서 확인 할 수 있습니다.,,,","키워드ID 기준으로 키워드 수정요청이 적용됩니다.,,,","변경할 상태값은 on/off 로 입력하면 됩니다. (대소문자 구분 없음),,,","입력은 최대 만(10000)개까지 가능합니다.,,,","[중요] 7행부터 입력값이 시스템에 반영됩니다. 1~6행을 삭제하지 마세요. 엑셀에서 저장시 CSV 파일형식을 꼭 확인하시기 바랍니다.,,,","광고그룹ID (선택),키워드ID (필수),키워드 (선택),키워드상태값 (on 또는 off)"];
   ooCsvMedia=[...mh,...ooRows.map(r=>`,${r.id},,${r.status}`)].join('\r\n');
-  ooFnMedia=`ko_edit_keyword_onoff_${ds}.csv`;
+  const allOn = ooRows.every(r=>r.status==='on');
+  const allOff = ooRows.every(r=>r.status==='off');
+  const statusTag = allOn ? '_ON' : allOff ? '_OFF' : '';
+  ooFnMedia=`ko_edit_keyword_onoff${statusTag}_${ds}.csv`;
   // 네이버스
   ooCsvNavers=[`"키워드ID","키워드명(선택)","ON/OFF"`,...ooRows.map(r=>`"${r.id}","","${r.status.toUpperCase()}"`)].join('\r\n');
-  ooFnNavers=`키워드_대량_ON_OFF_템플릿_${ds}.csv`;
+  ooFnNavers=`키워드_대량_ON_OFF_템플릿${statusTag}_${ds}.csv`;
   document.getElementById('oo-fn-media').value=ooFnMedia;
   document.getElementById('oo-fn-navers').value=ooFnNavers;
   const bar=document.getElementById('oo-dl-bar');

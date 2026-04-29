@@ -559,6 +559,37 @@
     color: var(--muted);
   }
 
+  /* Download button */
+  .download-btn {
+    width: 100%;
+    padding: 18px 32px;
+    background: linear-gradient(135deg, var(--success), #059669);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .download-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(16,185,129,0.4);
+  }
+  .download-btn:active:not(:disabled) { transform: translateY(0); }
+  .download-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+  .download-btn .btn-icon { font-size: 20px; }
+
   /* Toast */
   .toast {
     position: fixed;
@@ -684,6 +715,12 @@
     병합 후 다운로드
   </button>
 
+  <!-- Download Button -->
+  <button class="download-btn" id="downloadBtn" onclick="doDownload()" disabled>
+    <span class="btn-icon">⬇️</span>
+    다운로드
+  </button>
+
   <!-- Log -->
   <div class="log-wrap" id="logWrap">
     <div class="section-label" style="margin-top:20px">처리 로그</div>
@@ -696,6 +733,8 @@
 <script>
 let files = [];
 let totalEntries = 0;
+let readyBlob = null;
+let readyFileName = '';
 
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
@@ -816,6 +855,8 @@ async function startMerge() {
 
   // Reset
   files.forEach(f => f.status = 'waiting');
+  readyBlob = null;
+  document.getElementById('downloadBtn').disabled = true;
   renderFileList();
   addLog('병합 시작', 'info');
   document.getElementById('progressWrap').classList.add('visible');
@@ -885,26 +926,37 @@ async function startMerge() {
   try {
     const blob = await merged.generateAsync({
       type: 'blob',
+      mimeType: 'application/zip',
       compression: 'DEFLATE',
       compressionOptions: { level: 6 }
     }, meta => setProgress(95 + meta.percent * 0.05));
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = outputName + '.zip';
-    a.click();
-    URL.revokeObjectURL(url);
+    readyBlob = blob;
+    readyFileName = outputName;
 
     setProgress(100);
-    addLog(`🎉 다운로드 완료 → ${outputName}.zip (${formatSize(blob.size)})`, 'ok');
-    showToast('병합 완료! 다운로드가 시작됩니다.');
+    addLog(`✅ ZIP 생성 완료 (${formatSize(blob.size)}) — 아래 다운로드 버튼을 클릭하세요.`, 'ok');
+    showToast('ZIP 생성 완료! 다운로드 버튼을 눌러주세요.');
+    document.getElementById('downloadBtn').disabled = false;
   } catch (e) {
     addLog('ZIP 생성 실패: ' + e.message, 'err');
     showToast('오류가 발생했습니다.', 'error');
   }
 
   mergeBtn.disabled = false;
+}
+
+function doDownload() {
+  if (!readyBlob) return;
+  const url = URL.createObjectURL(readyBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = readyFileName + '.zip';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  addLog(`🎉 다운로드 시작 → ${readyFileName}.zip`, 'ok');
 }
 </script>
 </body>

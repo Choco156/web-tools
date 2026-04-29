@@ -6,246 +6,356 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>네이버 키워드 파일 생성기</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
 
-  :root {
-    --bg: #0e0e10;
-    --surface: #18181c;
-    --surface2: #1e1e24;
-    --border: #2a2a32;
-    --accent: #00e5a0;
-    --accent-dim: rgba(0,229,160,0.10);
-    --accent2: #5b6bff;
-    --accent2-dim: rgba(91,107,255,0.12);
-    --text: #e8e8f0;
-    --muted: #6b6b80;
-    --danger: #ff5060;
-    --danger-dim: rgba(255,80,96,0.10);
-    --warn: #f5a623;
-  }
+:root {
+  --bg: #0e0e10;
+  --surface: #18181c;
+  --surface2: #1e1e24;
+  --border: #2a2a32;
+  --accent: #00e5a0;
+  --accent-dim: rgba(0,229,160,0.10);
+  --accent2: #5b6bff;
+  --accent2-dim: rgba(91,107,255,0.12);
+  --text: #e8e8f0;
+  --muted: #6b6b80;
+  --danger: #ff5060;
+  --danger-dim: rgba(255,80,96,0.10);
+  --warn: #f5a623;
+}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Noto Sans KR', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 36px 24px 100px;
-  }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  min-height: 100vh;
+  display: flex;
+}
 
-  /* ── 헤더 ── */
-  header {
-    width: 100%;
-    max-width: 960px;
-    margin-bottom: 28px;
-  }
-  .tag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px; }
-  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
-  .subtitle { margin-top: 5px; color: var(--muted); font-size: 13px; font-weight: 300; }
+/* ── Sidebar ── */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 56px;
+  background: rgba(14,14,16,0.97);
+  border-right: 1px solid #2a2a32;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  z-index: 100;
+  transition: width 0.22s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+}
+.sidebar:hover { width: 180px; }
 
-  /* ── 탭 ── */
-  .tab-bar {
-    width: 100%;
-    max-width: 960px;
-    display: flex;
-    gap: 0;
-    margin-bottom: 20px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 4px;
-  }
-  .tab-btn {
-    flex: 1;
-    padding: 11px 16px;
-    border: none;
-    border-radius: 7px;
-    background: transparent;
-    color: var(--muted);
-    font-family: 'Noto Sans KR', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-  }
-  .tab-btn:hover { color: var(--text); }
-  .tab-btn.active-onoff {
-    background: var(--accent-dim);
-    color: var(--accent);
-    font-weight: 700;
-  }
-  .tab-btn.active-bid {
-    background: var(--accent2-dim);
-    color: var(--accent2);
-    font-weight: 700;
-  }
-  .tab-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-  }
-  .tab-btn.active-onoff .tab-dot { background: var(--accent); }
-  .tab-btn.active-bid .tab-dot { background: var(--accent2); }
-  .tab-btn:not(.active-onoff):not(.active-bid) .tab-dot { background: var(--border); }
+.sidebar-logo {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, #00e5a0, #5b6bff);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-bottom: 28px;
+}
 
-  /* ── 페이지 ── */
-  .page { display: none; width: 100%; max-width: 960px; }
-  .page.active { display: block; }
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 0 8px;
+}
 
-  /* ── 공통 레이아웃 ── */
-  .main-layout {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 20px;
-    align-items: start;
-  }
-  .left-panel { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 24px; }
-  .input-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px 10px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  color: #6b6b80;
+  transition: all 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  min-height: 40px;
+}
+.sidebar-item:hover { background: rgba(0,229,160,0.08); color: var(--text); }
+.sidebar-item.active {
+  background: rgba(0,229,160,0.12);
+  color: var(--accent);
+}
 
-  .section-label {
-    font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted);
-    letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 12px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.sidebar-icon {
+  font-size: 17px;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
 
-  .field-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
-  .req { color: var(--accent); font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
-  .req-bid { color: var(--accent2); font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
+.sidebar-label {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.15s 0.05s;
+  letter-spacing: 0.01em;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.sidebar:hover .sidebar-label { opacity: 1; }
 
-  textarea {
-    width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
-    color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 12px;
-    padding: 12px 14px; resize: vertical; transition: border-color 0.2s; line-height: 1.7;
-  }
-  textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
-  .bid-page textarea:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px var(--accent2-dim); }
-  textarea::placeholder { color: #3a3a48; }
-  .ta-id { height: 180px; }
-  .ta-val { height: 120px; }
-  .field-wrap { margin-bottom: 14px; }
-  .field-wrap:last-child { margin-bottom: 0; }
+.sidebar-divider {
+  width: 32px;
+  height: 1px;
+  background: #2a2a32;
+  margin: 8px auto;
+  transition: width 0.22s;
+}
+.sidebar:hover .sidebar-divider { width: calc(100% - 16px); }
 
-  .count-row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
-  .count-item { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
-  .count-item b { color: var(--accent); }
-  .bid-page .count-item b { color: var(--accent2); }
-  .count-item.mismatch b { color: var(--danger); }
+.sidebar-section-title {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #3a3a48;
+  padding: 0 12px;
+  margin-bottom: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.sidebar:hover .sidebar-section-title { opacity: 1; }
 
-  .match-badge { font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 3px 8px; border-radius: 4px; background: rgba(245,166,35,0.12); color: var(--warn); }
-  .match-badge.ok { background: var(--accent-dim); color: var(--accent); }
-  .match-badge.ok-bid { background: var(--accent2-dim); color: var(--accent2); }
-  .match-badge.bad { background: var(--danger-dim); color: var(--danger); }
+/* ── 메인 콘텐츠 ── */
+.main-content {
+  margin-left: 56px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36px 24px 100px;
+}
 
-  /* 일괄변경 버튼 (ON/OFF 전용) */
-  .quick-btns { display: flex; gap: 8px; }
-  .quick-btn { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: transparent; font-family: 'IBM Plex Mono', monospace; font-size: 12px; cursor: pointer; transition: all 0.15s; font-weight: 700; }
-  .quick-btn.on { color: var(--accent); border-color: var(--accent); }
-  .quick-btn.off { color: var(--danger); border-color: var(--danger); }
-  .quick-btn.on:hover { background: var(--accent-dim); }
-  .quick-btn.off:hover { background: var(--danger-dim); }
+/* ── 헤더 ── */
+header {
+  width: 100%;
+  max-width: 960px;
+  margin-bottom: 28px;
+}
 
-  /* 리셋 / 생성 버튼 */
-  .btn-reset {
-    width: 100%; padding: 11px; background: transparent; color: var(--muted);
-    border: 1px solid var(--border); border-radius: 8px;
-    font-family: 'Noto Sans KR', sans-serif; font-size: 13px; font-weight: 500;
-    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 7px;
-  }
-  .btn-reset:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); background: var(--danger-dim); }
-  .btn-reset:disabled { opacity: 0.3; cursor: not-allowed; }
+.tag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px; }
+h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+.subtitle { margin-top: 5px; color: var(--muted); font-size: 13px; font-weight: 300; }
 
-  .btn-generate {
-    width: 100%; padding: 14px; background: var(--accent); color: #000; border: none; border-radius: 8px;
-    font-family: 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 700;
-    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
-  }
-  .btn-generate:hover:not(:disabled) { background: #00ffb3; box-shadow: 0 6px 24px rgba(0,229,160,0.3); transform: translateY(-1px); }
-  .btn-generate:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
-  .btn-generate.bid-btn { background: var(--accent2); color: #fff; }
-  .btn-generate.bid-btn:hover:not(:disabled) { background: #7b8bff; box-shadow: 0 6px 24px rgba(91,107,255,0.3); }
+/* ── 탭 ── */
+.tab-bar {
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+}
 
-  .error-box { background: var(--danger-dim); border: 1px solid var(--danger); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--danger); display: none; line-height: 1.5; }
+.tab-btn {
+  flex: 1;
+  padding: 11px 16px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
 
-  /* ── 오른쪽 패널 ── */
-  .right-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-  .table-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface2); }
-  .table-title { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
-  .table-stats { display: flex; gap: 16px; }
-  .stat { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
-  .stat b { font-weight: 700; }
-  .stat.s-on b { color: var(--accent); }
-  .stat.s-off b { color: var(--danger); }
-  .stat.s-total b { color: var(--text); }
-  .stat.s-bid b { color: var(--accent2); }
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active-onoff { background: var(--accent-dim); color: var(--accent); font-weight: 700; }
+.tab-btn.active-bid { background: var(--accent2-dim); color: var(--accent2); font-weight: 700; }
 
-  .table-wrap { overflow-y: auto; max-height: 560px; }
-  table { width: 100%; border-collapse: collapse; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
-  thead { position: sticky; top: 0; z-index: 2; }
-  th { background: var(--surface2); color: var(--muted); padding: 10px 16px; text-align: left; font-weight: 600; font-size: 11px; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
-  td { padding: 7px 16px; border-bottom: 1px solid rgba(42,42,50,0.7); color: var(--text); vertical-align: middle; }
-  tr:hover td { background: rgba(255,255,255,0.025); }
-  .row-num { color: var(--muted); font-size: 11px; width: 44px; user-select: none; }
+.tab-dot { width: 6px; height: 6px; border-radius: 50%; }
+.tab-btn.active-onoff .tab-dot { background: var(--accent); }
+.tab-btn.active-bid .tab-dot { background: var(--accent2); }
+.tab-btn:not(.active-onoff):not(.active-bid) .tab-dot { background: var(--border); }
 
-  /* ON/OFF 토글 */
-  .toggle-btn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; border: none; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; transition: all 0.12s; letter-spacing: 0.04em; }
-  .toggle-btn.on { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(0,229,160,0.25); }
-  .toggle-btn.off { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(255,80,96,0.25); }
-  .toggle-btn.on:hover { background: rgba(0,229,160,0.2); }
-  .toggle-btn.off:hover { background: rgba(255,80,96,0.2); }
-  .toggle-dot { width: 5px; height: 5px; border-radius: 50%; }
-  .toggle-btn.on .toggle-dot { background: var(--accent); }
-  .toggle-btn.off .toggle-dot { background: var(--danger); }
+/* ── 페이지 ── */
+.page { display: none; width: 100%; max-width: 960px; }
+.page.active { display: block; }
 
-  /* 입찰가 뱃지 */
-  .bid-value { display: inline-block; padding: 3px 10px; border-radius: 6px; background: var(--accent2-dim); color: var(--accent2); font-weight: 600; font-size: 12px; }
-  .bid-value.invalid { background: var(--danger-dim); color: var(--danger); }
+/* ── 공통 레이아웃 ── */
+.main-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  align-items: start;
+}
 
-  .row-warn td { background: rgba(245,166,35,0.04); }
-  .warn-text { color: var(--warn); font-size: 10px; }
+.left-panel { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 24px; }
+.input-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
 
-  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 40px; color: var(--muted); gap: 12px; }
-  .empty-icon { font-size: 28px; opacity: 0.25; }
-  .empty-text { font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-align: center; line-height: 1.7; }
+.section-label {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted);
+  letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-  .more-notice { padding: 10px 16px; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); background: var(--surface2); }
+.field-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.req { color: var(--accent); font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
+.req-bid { color: var(--accent2); font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
 
-  /* ── 다운로드 바 ── */
-  .download-bar { display: none; flex-direction: column; border-top: 2px solid var(--accent); background: rgba(0,229,160,0.04); }
-  .download-bar.bid { border-top-color: var(--accent2); background: rgba(91,107,255,0.04); }
-  .download-bar.visible { display: flex; }
-  .dl-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px; gap: 12px; }
-  .dl-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 0.08em; min-width: 80px; }
-  .dl-label.navers { color: var(--accent2); }
-  .dl-divider { height: 1px; background: var(--border); margin: 0 20px; }
-  .filename-text { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .filename-text span { color: var(--text); }
-  .fn-input {
-    flex: 1; min-width: 0;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    padding: 7px 10px;
-    transition: border-color 0.2s;
-  }
-  .fn-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
-  .bid-page .fn-input:focus { border-color: var(--accent2); box-shadow: 0 0 0 2px var(--accent2-dim); }
-  .btn-dl { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--accent); color: #000; border: none; border-radius: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-  .btn-dl:hover { background: #00ffb3; transform: translateY(-1px); }
-  .btn-dl.navers { background: var(--accent2); color: #fff; }
-  .btn-dl.navers:hover { background: #7b8bff; }
+textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+  padding: 12px 14px; resize: vertical; transition: border-color 0.2s; line-height: 1.7;
+}
+textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.bid-page textarea:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px var(--accent2-dim); }
+textarea::placeholder { color: #3a3a48; }
+.ta-id { height: 180px; }
+.ta-val { height: 120px; }
+
+.field-wrap { margin-bottom: 14px; }
+.field-wrap:last-child { margin-bottom: 0; }
+
+.count-row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.count-item { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+.count-item b { color: var(--accent); }
+.bid-page .count-item b { color: var(--accent2); }
+.count-item.mismatch b { color: var(--danger); }
+.match-badge { font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 3px 8px; border-radius: 4px; background: rgba(245,166,35,0.12); color: var(--warn); }
+.match-badge.ok { background: var(--accent-dim); color: var(--accent); }
+.match-badge.ok-bid { background: var(--accent2-dim); color: var(--accent2); }
+.match-badge.bad { background: var(--danger-dim); color: var(--danger); }
+
+.quick-btns { display: flex; gap: 8px; }
+.quick-btn { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: transparent; font-family: 'IBM Plex Mono', monospace; font-size: 12px; cursor: pointer; transition: all 0.15s; font-weight: 700; }
+.quick-btn.on { color: var(--accent); border-color: var(--accent); }
+.quick-btn.off { color: var(--danger); border-color: var(--danger); }
+.quick-btn.on:hover { background: var(--accent-dim); }
+.quick-btn.off:hover { background: var(--danger-dim); }
+
+.btn-reset {
+  width: 100%; padding: 11px; background: transparent; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.btn-reset:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); background: var(--danger-dim); }
+.btn-reset:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-generate {
+  width: 100%; padding: 14px; background: var(--accent); color: #000; border: none; border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-generate:hover:not(:disabled) { background: #00ffb3; box-shadow: 0 6px 24px rgba(0,229,160,0.3); transform: translateY(-1px); }
+.btn-generate:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+.btn-generate.bid-btn { background: var(--accent2); color: #fff; }
+.btn-generate.bid-btn:hover:not(:disabled) { background: #7b8bff; box-shadow: 0 6px 24px rgba(91,107,255,0.3); }
+
+.error-box { background: var(--danger-dim); border: 1px solid var(--danger); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--danger); display: none; line-height: 1.5; }
+
+/* ── 오른쪽 패널 ── */
+.right-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.table-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.table-title { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+.table-stats { display: flex; gap: 16px; }
+.stat { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+.stat b { font-weight: 700; }
+.stat.s-on b { color: var(--accent); }
+.stat.s-off b { color: var(--danger); }
+.stat.s-total b { color: var(--text); }
+.stat.s-bid b { color: var(--accent2); }
+
+.table-wrap { overflow-y: auto; max-height: 560px; }
+table { width: 100%; border-collapse: collapse; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+thead { position: sticky; top: 0; z-index: 2; }
+th { background: var(--surface2); color: var(--muted); padding: 10px 16px; text-align: left; font-weight: 600; font-size: 11px; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
+td { padding: 7px 16px; border-bottom: 1px solid rgba(42,42,50,0.7); color: var(--text); vertical-align: middle; }
+tr:hover td { background: rgba(255,255,255,0.025); }
+.row-num { color: var(--muted); font-size: 11px; width: 44px; user-select: none; }
+
+.toggle-btn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; border: none; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; transition: all 0.12s; letter-spacing: 0.04em; }
+.toggle-btn.on { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(0,229,160,0.25); }
+.toggle-btn.off { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(255,80,96,0.25); }
+.toggle-btn.on:hover { background: rgba(0,229,160,0.2); }
+.toggle-btn.off:hover { background: rgba(255,80,96,0.2); }
+.toggle-dot { width: 5px; height: 5px; border-radius: 50%; }
+.toggle-btn.on .toggle-dot { background: var(--accent); }
+.toggle-btn.off .toggle-dot { background: var(--danger); }
+
+.bid-value { display: inline-block; padding: 3px 10px; border-radius: 6px; background: var(--accent2-dim); color: var(--accent2); font-weight: 600; font-size: 12px; }
+.bid-value.invalid { background: var(--danger-dim); color: var(--danger); }
+.row-warn td { background: rgba(245,166,35,0.04); }
+.warn-text { color: var(--warn); font-size: 10px; }
+
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 40px; color: var(--muted); gap: 12px; }
+.empty-icon { font-size: 28px; opacity: 0.25; }
+.empty-text { font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-align: center; line-height: 1.7; }
+.more-notice { padding: 10px 16px; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); background: var(--surface2); }
+
+/* ── 다운로드 바 ── */
+.download-bar { display: none; flex-direction: column; border-top: 2px solid var(--accent); background: rgba(0,229,160,0.04); }
+.download-bar.bid { border-top-color: var(--accent2); background: rgba(91,107,255,0.04); }
+.download-bar.visible { display: flex; }
+.dl-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px; gap: 12px; }
+.dl-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 0.08em; min-width: 80px; }
+.dl-label.navers { color: var(--accent2); }
+.dl-divider { height: 1px; background: var(--border); margin: 0 20px; }
+.filename-text { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filename-text span { color: var(--text); }
+.fn-input {
+  flex: 1; min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  padding: 7px 10px;
+  transition: border-color 0.2s;
+}
+.fn-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+.bid-page .fn-input:focus { border-color: var(--accent2); box-shadow: 0 0 0 2px var(--accent2-dim); }
+.btn-dl { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--accent); color: #000; border: none; border-radius: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.btn-dl:hover { background: #00ffb3; transform: translateY(-1px); }
+.btn-dl.navers { background: var(--accent2); color: #fff; }
+.btn-dl.navers:hover { background: #7b8bff; }
 </style>
 </head>
 <body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">🛠</div>
+  <div class="sidebar-nav">
+    <div class="sidebar-section-title">Tools</div>
+    <a class="sidebar-item active" href="index.html">
+      <span class="sidebar-icon">⚡</span>
+      <span class="sidebar-label">키워드 툴</span>
+    </a>
+    <a class="sidebar-item" href="zip-merger.html">
+      <span class="sidebar-icon">📦</span>
+      <span class="sidebar-label">ZIP Merger</span>
+    </a>
+  </div>
+</nav>
+
+<div class="main-content">
 
 <header>
   <div class="tag">● Naver AD Tool</div>
@@ -263,7 +373,7 @@
   </button>
 </div>
 
-<!-- ════════════════ ON/OFF 페이지 ════════════════ -->
+<!-- ON/OFF 페이지 -->
 <div class="page active" id="page-onoff">
   <div class="main-layout">
     <div class="left-panel">
@@ -349,7 +459,7 @@
   </div>
 </div>
 
-<!-- ════════════════ 입찰가 페이지 ════════════════ -->
+<!-- 입찰가 페이지 -->
 <div class="page bid-page" id="page-bid">
   <div class="main-layout">
     <div class="left-panel">
@@ -427,10 +537,11 @@
   </div>
 </div>
 
+</div><!-- /main-content -->
+
 <script>
 const LIMIT = 500;
 
-/* ─── 공통 유틸 ─── */
 function parseLines(t) { return t.split(/\r?\n/).map(l=>l.trim()).filter(l=>l!==''); }
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function getDateSuffix() {
@@ -447,23 +558,19 @@ function dlCSV(csv, filename) {
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
-/* ─── 탭 전환 ─── */
 function switchTab(t) {
   document.getElementById('page-onoff').classList.toggle('active', t==='onoff');
   document.getElementById('page-bid').classList.toggle('active', t==='bid');
   const ooBtn = document.getElementById('tab-onoff');
   const bidBtn = document.getElementById('tab-bid');
-  ooBtn.className  = 'tab-btn' + (t==='onoff' ? ' active-onoff' : '');
-  bidBtn.className = 'tab-btn' + (t==='bid'   ? ' active-bid'   : '');
+  ooBtn.className = 'tab-btn' + (t==='onoff' ? ' active-onoff' : '');
+  bidBtn.className = 'tab-btn' + (t==='bid' ? ' active-bid' : '');
 }
 
-/* ══════════════════════════════════
-   ON/OFF 페이지
-══════════════════════════════════ */
+/* ON/OFF */
 let ooRows = [];
 let ooCsvMedia='', ooCsvNavers='', ooFnMedia='', ooFnNavers='';
-
-const ooIdTA  = document.getElementById('oo-ids');
+const ooIdTA = document.getElementById('oo-ids');
 const ooValTA = document.getElementById('oo-vals');
 
 function ooSetAll(v) { ooValTA.value=v; ooOnInput(); }
@@ -474,10 +581,10 @@ function ooUpdateBadge(ids,sts) {
   document.getElementById('oo-id-cnt').innerHTML=`키워드ID <b>${ids.length}</b>개`;
   document.getElementById('oo-val-cnt').innerHTML=`상태값 <b>${sts.length}</b>개`;
   const b=document.getElementById('oo-badge');
-  if (!ids.length)           { b.className='match-badge';     b.textContent='대기중'; }
-  else if (sts.length===1)   { b.className='match-badge';     b.textContent='전체적용'; }
+  if (!ids.length) { b.className='match-badge'; b.textContent='대기중'; }
+  else if (sts.length===1) { b.className='match-badge'; b.textContent='전체적용'; }
   else if (ids.length===sts.length) { b.className='match-badge ok'; b.textContent='✓ 일치'; }
-  else                       { b.className='match-badge bad'; b.textContent=`${Math.abs(ids.length-sts.length)}개 차이`; }
+  else { b.className='match-badge bad'; b.textContent=`${Math.abs(ids.length-sts.length)}개 차이`; }
 }
 
 function ooRenderTable() {
@@ -497,7 +604,7 @@ function ooRenderTable() {
     const cell = warn
       ? `<span class="warn-text">⚠ "${escHtml(row.status||'(없음)')}"</span>`
       : `<button class="toggle-btn ${row.status}" onclick="ooToggle(${i})" title="클릭으로 ON↔OFF">
-           <span class="toggle-dot"></span>${row.status.toUpperCase()}
+          <span class="toggle-dot"></span>${row.status.toUpperCase()}
          </button>`;
     tr.innerHTML=`<td class="row-num">${i+1}</td><td>${escHtml(row.id)}</td><td>${cell}</td><td>${warn?'<span class="warn-text">유효하지 않은 값</span>':''}</td>`;
     tbody.appendChild(tr);
@@ -551,19 +658,17 @@ function ooReset() {
 
 function ooGenerate() {
   ooClearErr();
-  if(!ooRows.length)       { ooShowErr('키워드ID를 입력해주세요.'); return; }
-  if(ooRows.length>10000)  { ooShowErr('최대 10,000개까지 입력 가능합니다.'); return; }
+  if(!ooRows.length) { ooShowErr('키워드ID를 입력해주세요.'); return; }
+  if(ooRows.length>10000) { ooShowErr('최대 10,000개까지 입력 가능합니다.'); return; }
   const bad=ooRows.find(r=>r.status!=='on'&&r.status!=='off');
   if(bad) { ooShowErr('유효하지 않은 상태값이 있습니다. ⚠ 표시 행을 확인하세요.'); return; }
   const ds=getDateSuffix();
-  // 매체
   const mh=["광고그룹ID 키워드ID 는 '광고다운로드' 파일에서 확인 할 수 있습니다.,,,","키워드ID 기준으로 키워드 수정요청이 적용됩니다.,,,","변경할 상태값은 on/off 로 입력하면 됩니다. (대소문자 구분 없음),,,","입력은 최대 만(10000)개까지 가능합니다.,,,","[중요] 7행부터 입력값이 시스템에 반영됩니다. 1~6행을 삭제하지 마세요. 엑셀에서 저장시 CSV 파일형식을 꼭 확인하시기 바랍니다.,,,","광고그룹ID (선택),키워드ID (필수),키워드 (선택),키워드상태값 (on 또는 off)"];
   ooCsvMedia=[...mh,...ooRows.map(r=>`,${r.id},,${r.status}`)].join('\r\n');
   const allOn = ooRows.every(r=>r.status==='on');
   const allOff = ooRows.every(r=>r.status==='off');
   const statusTag = allOn ? '_ON' : allOff ? '_OFF' : '';
   ooFnMedia=`ko_edit_keyword_onoff${statusTag}_${ds}.csv`;
-  // 네이버스
   ooCsvNavers=[`"키워드ID","키워드명(선택)","ON/OFF"`,...ooRows.map(r=>`"${r.id}","","${r.status.toUpperCase()}"`)].join('\r\n');
   ooFnNavers=`키워드_대량_ON_OFF_템플릿${statusTag}_${ds}.csv`;
   document.getElementById('oo-fn-media').value=ooFnMedia;
@@ -577,19 +682,16 @@ function ooDownload(t) {
   const fn = document.getElementById(t==='navers'?'oo-fn-navers':'oo-fn-media').value.trim() || (t==='navers'?ooFnNavers:ooFnMedia);
   dlCSV(t==='navers'?ooCsvNavers:ooCsvMedia, fn);
 }
+
 ooIdTA.addEventListener('input', ooOnInput);
 ooValTA.addEventListener('input', ooOnInput);
 ooIdTA.addEventListener('paste', ()=>setTimeout(ooOnInput,30));
 ooValTA.addEventListener('paste', ()=>setTimeout(ooOnInput,30));
 
-
-/* ══════════════════════════════════
-   입찰가 페이지
-══════════════════════════════════ */
+/* 입찰가 */
 let bidRows = [];
 let bidCsvMedia='', bidCsvNavers='', bidFnMedia='', bidFnNavers='';
-
-const bidIdTA  = document.getElementById('bid-ids');
+const bidIdTA = document.getElementById('bid-ids');
 const bidValTA = document.getElementById('bid-vals');
 
 function bidShowErr(m) { const b=document.getElementById('bid-error'); b.style.display='block'; b.textContent='⚠ '+m; }
@@ -599,10 +701,10 @@ function bidUpdateBadge(ids,vals) {
   document.getElementById('bid-id-cnt').innerHTML=`키워드ID <b>${ids.length}</b>개`;
   document.getElementById('bid-val-cnt').innerHTML=`입찰가 <b>${vals.length}</b>개`;
   const b=document.getElementById('bid-badge');
-  if(!ids.length)                { b.className='match-badge';      b.textContent='대기중'; }
-  else if(vals.length===1)       { b.className='match-badge';      b.textContent='전체적용'; }
+  if(!ids.length) { b.className='match-badge'; b.textContent='대기중'; }
+  else if(vals.length===1) { b.className='match-badge'; b.textContent='전체적용'; }
   else if(ids.length===vals.length){ b.className='match-badge ok-bid'; b.textContent='✓ 일치'; }
-  else                           { b.className='match-badge bad';  b.textContent=`${Math.abs(ids.length-vals.length)}개 차이`; }
+  else { b.className='match-badge bad'; b.textContent=`${Math.abs(ids.length-vals.length)}개 차이`; }
 }
 
 function isValidBid(v) { return /^\d+$/.test(v.trim()) && parseInt(v)>0; }
@@ -667,16 +769,14 @@ function bidReset() {
 
 function bidGenerate() {
   bidClearErr();
-  if(!bidRows.length)       { bidShowErr('키워드ID를 입력해주세요.'); return; }
-  if(bidRows.length>10000)  { bidShowErr('최대 10,000개까지 입력 가능합니다.'); return; }
+  if(!bidRows.length) { bidShowErr('키워드ID를 입력해주세요.'); return; }
+  if(bidRows.length>10000) { bidShowErr('최대 10,000개까지 입력 가능합니다.'); return; }
   const bad=bidRows.find(r=>!isValidBid(r.bid||''));
   if(bad) { bidShowErr('유효하지 않은 입찰가가 있습니다. ⚠ 표시 행을 확인하세요.'); return; }
   const ds=getDateSuffix();
-  // 매체
   const mh=["광고그룹ID 키워드ID 는 '광고다운로드' 파일에서 확인 할 수 있습니다.,,,","키워드ID 기준으로 키워드 수정요청이 적용됩니다. 입찰가는 쉼표나 '원' 표시를 제외한 숫자만 입력해 주세요.,,,","입찰가는 '키워드입찰가'로 저장되며 '기본입찰가'가 있더라도 수정된 '키워드입찰가'로 광고가 진행됩니다.,,,","입력은 최대 만(10000)개까지 가능합니다.,,,","[중요] 7행부터 입력값이 시스템에 반영됩니다. 1~6행을 삭제하지 마세요. 엑셀에서 저장시 CSV 파일형식을 꼭 확인하시기 바랍니다.,,,","광고그룹ID (선택),키워드ID (필수),키워드 (선택),\"키워드입찰가 (필수,숫자만)\""];
   bidCsvMedia=[...mh,...bidRows.map(r=>`,${r.id},,${r.bid}`)].join('\r\n');
   bidFnMedia=`ko_edit_keyword_bid_template_${ds}.csv`;
-  // 네이버스
   bidCsvNavers=[`"키워드ID","키워드명(선택)","입찰가(선택)"`,...bidRows.map(r=>`"${r.id}","","${r.bid}"`)].join('\r\n');
   bidFnNavers=`키워드_대량_입찰가_수정_템플릿_${ds}.csv`;
   document.getElementById('bid-fn-media').value=bidFnMedia;
@@ -690,6 +790,7 @@ function bidDownload(t) {
   const fn = document.getElementById(t==='navers'?'bid-fn-navers':'bid-fn-media').value.trim() || (t==='navers'?bidFnNavers:bidFnMedia);
   dlCSV(t==='navers'?bidCsvNavers:bidCsvMedia, fn);
 }
+
 bidIdTA.addEventListener('input', bidOnInput);
 bidValTA.addEventListener('input', bidOnInput);
 bidIdTA.addEventListener('paste', ()=>setTimeout(bidOnInput,30));

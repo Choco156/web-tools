@@ -153,10 +153,11 @@
   .container {
     position: relative;
     z-index: 1;
-    max-width: 860px;
+    max-width: 920px;
+    width: 100%;
     margin: 0 auto;
     padding: 48px 24px 80px;
-    margin-left: 56px;
+    padding-left: calc(56px + 24px);
     flex: 1;
   }
 
@@ -395,22 +396,17 @@
 
   /* Options */
   .options-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     margin-bottom: 28px;
   }
 
-  .option-card {
-    position: relative;
-    cursor: pointer;
-  }
-
-  .option-card input[type="radio"] { display: none; }
-
   .option-label {
-    display: block;
-    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
     border: 1px solid var(--border);
     border-radius: 10px;
     background: var(--surface);
@@ -426,11 +422,13 @@
 
   .option-label:hover { border-color: rgba(124,58,237,0.4); }
 
+  .option-info { flex: 1; }
+
   .option-title {
     font-size: 13px;
     font-weight: 600;
     color: var(--text);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -439,8 +437,29 @@
   .option-desc {
     font-size: 11px;
     color: var(--muted);
-    line-height: 1.5;
+    line-height: 1.4;
     font-family: 'Space Mono', monospace;
+  }
+
+  /* Radio dot indicator */
+  .option-radio-dot {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .option-card input:checked + .option-label .option-radio-dot {
+    border-color: var(--accent);
+    background: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+  }
+  .option-card input:checked + .option-label .option-radio-dot::after {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: white;
   }
 
   /* Merge button */
@@ -821,22 +840,31 @@
     <label class="option-card">
       <input type="radio" name="merge" value="flat" checked>
       <div class="option-label">
-        <div class="option-title">📂 평면 병합</div>
-        <div class="option-desc">모든 파일을 루트에 모아 폴더 구조 제거</div>
+        <div class="option-radio-dot"></div>
+        <div class="option-info">
+          <div class="option-title">📂 평면 병합</div>
+          <div class="option-desc">모든 파일을 루트에 모아 폴더 구조 제거</div>
+        </div>
       </div>
     </label>
     <label class="option-card">
       <input type="radio" name="merge" value="preserve">
       <div class="option-label">
-        <div class="option-title">🗂 구조 유지</div>
-        <div class="option-desc">원본 폴더 구조를 그대로 병합</div>
+        <div class="option-radio-dot"></div>
+        <div class="option-info">
+          <div class="option-title">🗂 구조 유지</div>
+          <div class="option-desc">원본 폴더 구조를 그대로 병합</div>
+        </div>
       </div>
     </label>
     <label class="option-card">
       <input type="radio" name="merge" value="subfolder">
       <div class="option-label">
-        <div class="option-title">📁 ZIP별 폴더</div>
-        <div class="option-desc">각 ZIP 이름의 하위 폴더에 분리 보관</div>
+        <div class="option-radio-dot"></div>
+        <div class="option-info">
+          <div class="option-title">📁 ZIP별 폴더</div>
+          <div class="option-desc">각 ZIP 이름의 하위 폴더에 분리 보관</div>
+        </div>
       </div>
     </label>
   </div>

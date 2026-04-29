@@ -6,7 +6,7 @@
 <title>ZIP Merger</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap');
 
   :root {
     --bg: #0a0a0f;
@@ -24,7 +24,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: 'Syne', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
@@ -85,10 +85,11 @@
   .badge::before { content: '◈'; font-size: 9px; }
 
   h1 {
-    font-size: clamp(40px, 7vw, 68px);
-    font-weight: 800;
-    line-height: 0.95;
-    letter-spacing: -0.03em;
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 400;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
   }
 
   h1 .line1 { color: var(--text); display: block; }
@@ -346,24 +347,24 @@
 
   /* Merge button */
   .merge-btn {
-    width: 100%;
-    padding: 18px 32px;
+    width: auto;
+    padding: 14px 32px;
     background: linear-gradient(135deg, var(--accent), #5b21b6);
     border: none;
     border-radius: 10px;
     color: white;
-    font-family: 'Syne', sans-serif;
-    font-size: 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.02em;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
   }
 
   .merge-btn::before {
@@ -559,27 +560,33 @@
     color: var(--muted);
   }
 
+  /* Button row */
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 0;
+  }
+
   /* Download button */
   .download-btn {
-    width: 100%;
-    padding: 18px 32px;
+    width: auto;
+    padding: 14px 32px;
     background: linear-gradient(135deg, var(--success), #059669);
     border: none;
     border-radius: 10px;
     color: white;
-    font-family: 'Syne', sans-serif;
-    font-size: 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.02em;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    margin-top: 12px;
+    gap: 8px;
   }
 
   .download-btn:hover:not(:disabled) {
@@ -589,6 +596,42 @@
   .download-btn:active:not(:disabled) { transform: translateY(0); }
   .download-btn:disabled { opacity: 0.25; cursor: not-allowed; }
   .download-btn .btn-icon { font-size: 20px; }
+
+  /* Checkbox option */
+  .checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 28px;
+  }
+  .checkbox-option:hover { border-color: rgba(124,58,237,0.4); }
+  .checkbox-option input[type="checkbox"] { display: none; }
+  .checkbox-box {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--muted);
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    font-size: 11px;
+  }
+  .checkbox-option input:checked ~ .checkbox-box,
+  .checkbox-option.checked .checkbox-box {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .checkbox-option.checked { border-color: rgba(124,58,237,0.4); background: rgba(124,58,237,0.05); }
+  .checkbox-text { font-size: 13px; font-weight: 600; color: var(--text); }
+  .checkbox-desc { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; margin-left: auto; }
 
   /* Toast */
   .toast {
@@ -682,14 +725,15 @@
         <div class="option-desc">각 ZIP 이름의 하위 폴더에 분리 보관</div>
       </div>
     </label>
-    <label class="option-card">
-      <input type="radio" name="merge" value="rename">
-      <div class="option-label">
-        <div class="option-title">✏️ 중복 자동 변경</div>
-        <div class="option-desc">동일 파일명은 자동으로 번호 추가</div>
-      </div>
-    </label>
   </div>
+
+  <!-- Rename checkbox -->
+  <label class="checkbox-option" id="renameCheckWrap" onclick="toggleRename(this)">
+    <input type="checkbox" id="renameCheck">
+    <div class="checkbox-box" id="checkboxBox"></div>
+    <span class="checkbox-text">✏️ 중복 파일명 자동 변경</span>
+    <span class="checkbox-desc">동일 이름엔 번호 추가</span>
+  </label>
 
   <!-- Output filename -->
   <div class="section-label">출력 파일명</div>
@@ -709,17 +753,17 @@
     </div>
   </div>
 
-  <!-- Merge Button -->
-  <button class="merge-btn" id="mergeBtn" onclick="startMerge()" disabled>
-    <span class="btn-icon">🔀</span>
-    병합 후 다운로드
-  </button>
-
-  <!-- Download Button -->
-  <button class="download-btn" id="downloadBtn" onclick="doDownload()" disabled>
-    <span class="btn-icon">⬇️</span>
-    다운로드
-  </button>
+  <!-- Button Row -->
+  <div class="btn-row">
+    <button class="merge-btn" id="mergeBtn" onclick="startMerge()" disabled>
+      <span class="btn-icon">🔀</span>
+      병합
+    </button>
+    <button class="download-btn" id="downloadBtn" onclick="doDownload()" disabled>
+      <span class="btn-icon">⬇️</span>
+      다운로드
+    </button>
+  </div>
 
   <!-- Log -->
   <div class="log-wrap" id="logWrap">
@@ -736,6 +780,21 @@ let totalEntries = 0;
 let readyBlob = null;
 let readyFileName = '';
 
+let renameEnabled = false;
+
+function toggleRename(wrap) {
+  renameEnabled = !renameEnabled;
+  wrap.classList.toggle('checked', renameEnabled);
+  document.getElementById('checkboxBox').textContent = renameEnabled ? '✓' : '';
+}
+
+function getTodayStr() {
+  const d = new Date();
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `_${yy}${mm}${dd}`;
+}
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
 const fileList = document.getElementById('fileList');
@@ -851,7 +910,8 @@ async function startMerge() {
   if (files.length === 0) return;
 
   const mode = document.querySelector('input[name="merge"]:checked').value;
-  const outputName = document.getElementById('outputName').value.trim() || 'merged_output';
+  const baseName = document.getElementById('outputName').value.trim() || 'merged_output';
+  const outputName = baseName + getTodayStr();
 
   // Reset
   files.forEach(f => f.status = 'waiting');
@@ -891,16 +951,19 @@ async function startMerge() {
           targetPath = path;
         } else if (mode === 'subfolder') {
           targetPath = `${zipBaseName}/${path}`;
-        } else if (mode === 'rename') {
-          const justName = path.split('/').pop();
+        }
+
+        // Apply rename if checkbox enabled
+        if (renameEnabled) {
+          const base = targetPath.includes('/') ? targetPath.split('/').slice(0, -1).join('/') + '/' : '';
+          const justName = targetPath.split('/').pop();
           if (fileNameCount[justName] !== undefined) {
             fileNameCount[justName]++;
             const ext = justName.includes('.') ? '.' + justName.split('.').pop() : '';
-            const base = ext ? justName.slice(0, -ext.length) : justName;
-            targetPath = `${base}_(${fileNameCount[justName]})${ext}`;
+            const nameBase = ext ? justName.slice(0, -ext.length) : justName;
+            targetPath = `${base}${nameBase}_(${fileNameCount[justName]})${ext}`;
           } else {
             fileNameCount[justName] = 0;
-            targetPath = justName;
           }
         }
 

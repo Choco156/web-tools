@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CiAgPHBvbHlnb24gcG9pbnRzPSIzNiwyIDE2LDM2IDMwLDM2IDI4LDYyIDQ4LDI4IDM0LDI4IiBmaWxsPSIjMDNDNzVBIi8+Cjwvc3ZnPg==">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>확장소재 부가정보 등록 생성기</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+:root {
+  --bg: #0e0e10;
+  --surface: #18181c;
+  --surface2: #1e1e24;
+  --border: #2a2a32;
+  --accent: #00e5a0;
+  --accent-dim: rgba(0,229,160,0.10);
+  --accent2: #5b6bff;
+  --accent2-dim: rgba(91,107,255,0.12);
+  --text: #e8e8f0;
+  --muted: #6b6b80;
+  --danger: #ff5060;
+  --danger-dim: rgba(255,80,96,0.10);
+  --warn: #f5a623;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  min-height: 100vh;
+  display: flex;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 56px;
+  background: rgba(14,14,16,0.97);
+  border-right: 1px solid #2a2a32;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  z-index: 100;
+  transition: width 0.22s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+}
+.sidebar:hover { width: 180px; }
+
+.sidebar-logo {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, #00e5a0, #5b6bff);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-bottom: 28px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 0 8px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px 10px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  color: #6b6b80;
+  transition: all 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  min-height: 40px;
+}
+.sidebar-item:hover { background: rgba(0,229,160,0.08); color: var(--text); }
+.sidebar-item.active {
+  background: rgba(0,229,160,0.12);
+  color: var(--accent);
+}
+
+.sidebar-icon {
+  font-size: 17px;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.sidebar-label {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.15s 0.05s;
+  letter-spacing: 0.01em;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.sidebar:hover .sidebar-label { opacity: 1; }
+
+.sidebar-divider {
+  width: 32px;
+  height: 1px;
+  background: #2a2a32;
+  margin: 8px auto;
+  transition: width 0.22s;
+}
+.sidebar:hover .sidebar-divider { width: calc(100% - 16px); }
+
+.sidebar-section-title {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #3a3a48;
+  padding: 0 12px;
+  margin-bottom: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.sidebar:hover .sidebar-section-title { opacity: 1; }
+
+/* ── 메인 콘텐츠 ── */
+.main-content {
+  margin-left: 56px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36px 24px 100px;
+}
+
+/* ── 헤더 ── */
+header {
+  width: 100%;
+  max-width: 960px;
+  margin-bottom: 28px;
+}
+
+.tag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px; }
+h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+.subtitle { margin-top: 5px; color: var(--muted); font-size: 13px; font-weight: 300; }
+
+/* ── 페이지 ── */
+.page { width: 100%; max-width: 960px; }
+
+/* ── 공통 레이아웃 ── */
+.main-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.left-panel { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 24px; }
+.input-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+
+.section-label {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted);
+  letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.field-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.req { color: var(--accent); font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
+
+textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+  padding: 12px 14px; resize: vertical; transition: border-color 0.2s; line-height: 1.7;
+}
+textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+textarea::placeholder { color: #3a3a48; }
+.ta-id { height: 240px; }
+
+.field-wrap { margin-bottom: 14px; }
+.field-wrap:last-child { margin-bottom: 0; }
+
+.count-row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.count-item { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+.count-item b { color: var(--accent); }
+
+.btn-reset {
+  width: 100%; padding: 11px; background: transparent; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.btn-reset:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); background: var(--danger-dim); }
+.btn-reset:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-generate {
+  width: 100%; padding: 14px; background: var(--accent); color: #000; border: none; border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-generate:hover:not(:disabled) { background: #00ffb3; box-shadow: 0 6px 24px rgba(0,229,160,0.3); transform: translateY(-1px); }
+.btn-generate:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+.error-box { background: var(--danger-dim); border: 1px solid var(--danger); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--danger); display: none; line-height: 1.5; }
+
+/* ── 오른쪽 패널 ── */
+.right-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.table-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.table-title { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+.table-stats { display: flex; gap: 16px; }
+.stat { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+.stat b { font-weight: 700; }
+.stat.s-total b { color: var(--text); }
+
+.table-wrap { overflow-y: auto; max-height: 560px; }
+table { width: 100%; border-collapse: collapse; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+thead { position: sticky; top: 0; z-index: 2; }
+th { background: var(--surface2); color: var(--muted); padding: 10px 16px; text-align: left; font-weight: 600; font-size: 11px; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
+td { padding: 7px 16px; border-bottom: 1px solid rgba(42,42,50,0.7); color: var(--text); vertical-align: middle; }
+tr:hover td { background: rgba(255,255,255,0.025); }
+.row-num { color: var(--muted); font-size: 11px; width: 44px; user-select: none; }
+
+.id-badge {
+  display: inline-block; padding: 3px 10px; border-radius: 6px;
+  background: var(--accent-dim); color: var(--accent); font-weight: 600; font-size: 12px;
+}
+
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 40px; color: var(--muted); gap: 12px; }
+.empty-icon { font-size: 28px; opacity: 0.25; }
+.empty-text { font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-align: center; line-height: 1.7; }
+.more-notice { padding: 10px 16px; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); background: var(--surface2); }
+
+/* ── info card ── */
+.info-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.info-dot {
+  color: var(--accent);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+/* ── 다운로드 바 ── */
+.download-bar { display: none; flex-direction: column; border-top: 2px solid var(--accent); background: rgba(0,229,160,0.04); }
+.download-bar.visible { display: flex; }
+.dl-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px; gap: 12px; }
+.dl-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 0.08em; min-width: 80px; }
+.fn-input {
+  flex: 1; min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  padding: 7px 10px;
+  transition: border-color 0.2s;
+}
+.fn-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+.btn-dl { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--accent); color: #000; border: none; border-radius: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.btn-dl:hover { background: #00ffb3; transform: translateY(-1px); }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">🛠</div>
+  <div class="sidebar-nav">
+    <div class="sidebar-section-title">Tools</div>
+    <a class="sidebar-item" href="index.html">
+      <span class="sidebar-icon">⚡</span>
+      <span class="sidebar-label">키워드 툴</span>
+    </a>
+    <a class="sidebar-item active" href="adext-extra.html">
+      <span class="sidebar-icon">🧩</span>
+      <span class="sidebar-label">부가정보 등록</span>
+    </a>
+    <a class="sidebar-item" href="zip-merger.html">
+      <span class="sidebar-icon">📦</span>
+      <span class="sidebar-label">ZIP Merger</span>
+    </a>
+  </div>
+</nav>
+
+<div class="main-content">
+
+<header>
+  <div class="tag">● Naver AD Tool</div>
+  <h1>확장소재 부가정보 등록 생성기</h1>
+  <p class="subtitle">소재ID를 붙여넣으면 즉시 미리보기 · 매체 CSV 자동 생성</p>
+</header>
+
+<div class="page">
+  <div class="main-layout">
+
+    <!-- 왼쪽 패널 -->
+    <div class="left-panel">
+      <div class="input-card">
+        <div class="section-label">데이터 입력</div>
+        <div class="field-wrap">
+          <div class="field-label">소재ID <span class="req">필수</span></div>
+          <textarea class="ta-id" id="ids" placeholder="nsa-12345678&#10;nsa-87654321&#10;..."></textarea>
+        </div>
+        <div class="count-row">
+          <div class="count-item" id="id-cnt">소재ID <b>0</b>개</div>
+        </div>
+      </div>
+
+      <!-- 안내 카드 -->
+      <div class="info-card">
+        <div class="section-label" style="margin-bottom:4px">안내</div>
+        <div class="info-row"><span class="info-dot">▸</span><span>등록 시 기본 상태는 <b style="color:var(--accent)">ON</b>으로 설정됩니다.</span></div>
+        <div class="info-row"><span class="info-dot">▸</span><span>ON/OFF 수정은 별도 요청 유형을 이용하세요.</span></div>
+        <div class="info-row"><span class="info-dot">▸</span><span>최대 <b style="color:var(--text)">10,000개</b>까지 입력 가능합니다.</span></div>
+      </div>
+
+      <div class="error-box" id="error"></div>
+
+      <button class="btn-reset" id="reset-btn" onclick="doReset()" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+        초기화
+      </button>
+      <button class="btn-generate" id="gen-btn" onclick="doGenerate()" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        CSV 파일 생성
+      </button>
+    </div>
+
+    <!-- 오른쪽 패널 -->
+    <div class="right-panel">
+      <div class="table-header">
+        <div class="table-title">실시간 미리보기</div>
+        <div class="table-stats">
+          <div class="stat s-total">총 <b id="total">0</b>개</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="empty-state" id="empty">
+          <div class="empty-icon">⌨</div>
+          <div class="empty-text">소재ID를 왼쪽에 붙여넣으세요</div>
+        </div>
+        <table id="tbl" style="display:none">
+          <thead><tr>
+            <th class="row-num">#</th>
+            <th>소재ID</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="more-notice" id="more" style="display:none"></div>
+
+      <!-- 다운로드 바 -->
+      <div class="download-bar" id="dl-bar">
+        <div class="dl-item">
+          <div class="dl-label">매체 CSV</div>
+          <input class="fn-input" id="fn-media" value="-">
+          <button class="btn-dl" onclick="doDownload()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            매체 다운로드
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /main-content -->
+
+<script>
+const LIMIT = 500;
+let rows = [];
+let csvData = '', csvFilename = '';
+const idTA = document.getElementById('ids');
+
+function parseLines(t) { return t.split(/\r?\n/).map(l=>l.trim()).filter(l=>l!==''); }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function getDateSuffix() {
+  const n = new Date();
+  return String(n.getFullYear()).slice(2) + String(n.getMonth()+1).padStart(2,'0') + String(n.getDate()).padStart(2,'0');
+}
+function dlCSV(csv, filename) {
+  const bom = '\uFEFF' + csv;
+  const bytes = new TextEncoder().encode(bom);
+  let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b));
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8;base64,' + btoa(bin);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function showErr(m) { const b = document.getElementById('error'); b.style.display='block'; b.textContent='⚠ '+m; }
+function clearErr() { document.getElementById('error').style.display='none'; }
+
+function renderTable() {
+  const tbody = document.getElementById('tbody'), tbl = document.getElementById('tbl');
+  const empty = document.getElementById('empty'), more = document.getElementById('more');
+  if (!rows.length) {
+    tbl.style.display='none'; empty.style.display='flex'; more.style.display='none';
+    document.getElementById('total').textContent = 0;
+    return;
+  }
+  empty.style.display='none'; tbl.style.display='table';
+  tbody.innerHTML = '';
+  rows.slice(0, LIMIT).forEach((id, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="row-num">${i+1}</td><td><span class="id-badge">${escHtml(id)}</span></td>`;
+    tbody.appendChild(tr);
+  });
+  if (rows.length > LIMIT) {
+    more.style.display='block';
+    more.textContent = `테이블은 ${LIMIT}개까지 표시 | CSV는 ${rows.length}개 전체 포함`;
+  } else {
+    more.style.display='none';
+  }
+  document.getElementById('total').textContent = rows.length;
+}
+
+function onInput() {
+  clearErr();
+  const ids = parseLines(idTA.value);
+  document.getElementById('id-cnt').innerHTML = `소재ID <b>${ids.length}</b>개`;
+  document.getElementById('reset-btn').disabled = !idTA.value.trim();
+  document.getElementById('gen-btn').disabled = !ids.length;
+  rows = ids;
+  renderTable();
+  document.getElementById('dl-bar').classList.remove('visible');
+}
+
+function doReset() {
+  idTA.value = ''; rows = [];
+  csvData = ''; csvFilename = '';
+  renderTable();
+  document.getElementById('id-cnt').innerHTML = `소재ID <b>0</b>개`;
+  document.getElementById('gen-btn').disabled = true;
+  document.getElementById('reset-btn').disabled = true;
+  document.getElementById('dl-bar').classList.remove('visible');
+  clearErr();
+}
+
+function doGenerate() {
+  clearErr();
+  if (!rows.length) { showErr('소재ID를 입력해주세요.'); return; }
+  if (rows.length > 10000) { showErr('최대 10,000개까지 입력 가능합니다.'); return; }
+  const ds = getDateSuffix();
+  const header = [
+    '"등록된 쇼핑 소재의 부가정보를 대량으로 등록합니다.(쇼핑몰 상품, 제품 카탈로그)"',
+    '최초 등록 후 on/off 수정은 별도 요청 유형으로 처리해 주세요. 등록 시 기본 설정은 on 입니다.',
+    '',
+    '입력은 최대 만(10000)개까지 가능합니다.',
+    '[중요] 7행부터 입력값이 시스템에 반영됩니다. 1~6행을 삭제하지 마세요. 엑셀에서 저장시 CSV 파일형식을 꼭 확인하시기 바랍니다.',
+    '소재ID(필수)'
+  ];
+  csvData = [...header, ...rows].join('\r\n');
+  csvFilename = `ko_add_shopping_adext_extra_${ds}.csv`;
+  document.getElementById('fn-media').value = csvFilename;
+  const bar = document.getElementById('dl-bar');
+  bar.classList.add('visible');
+  bar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function doDownload() {
+  const fn = document.getElementById('fn-media').value.trim() || csvFilename;
+  dlCSV(csvData, fn);
+}
+
+idTA.addEventListener('input', onInput);
+idTA.addEventListener('paste', () => setTimeout(onInput, 30));
+</script>
+</body>
+</html>
